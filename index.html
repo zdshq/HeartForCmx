@@ -1,0 +1,192 @@
+<!DOCTYPE html>
+<html lang="zh">
+<head>
+<meta charset="UTF-8">
+<title>点击爱心炸开效果与高频率散射光束</title>
+<style>
+  body {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    height: 100vh;
+    background-color: #222;
+    margin: 0;
+    overflow: hidden;
+  }
+  .heart {
+    position: relative;
+    width: 100px;
+    height: 90px;
+    transform: scale(1.5);
+    cursor: pointer;
+    animation: pulse 1.5s infinite;
+  }
+  .heart:before,
+  .heart:after {
+    content: "";
+    position: absolute;
+    width: 50px;
+    height: 80px;
+    top: 0;
+    background: radial-gradient(circle, #ff5f6d, #ffc371);
+    border-radius: 50px 50px 0 0;
+  }
+  .heart:before {
+    left: 50px;
+    transform: rotate(-45deg);
+    transform-origin: 0 100%;
+  }
+  .heart:after {
+    left: 0;
+    transform: rotate(45deg);
+    transform-origin: 100% 100%;
+  }
+  .exploding {
+    animation: explode 0.3s forwards;
+  }
+  @keyframes pulse {
+    0%, 100% {
+      transform: scale(1.5);
+    }
+    50% {
+      transform: scale(1.6);
+    }
+  }
+  @keyframes explode {
+    to {
+      transform: scale(0);
+      opacity: 0;
+    }
+  }
+  .message {
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    font-size: 3rem;
+    color: #ffcccc;
+    opacity: 0;
+    z-index: 10;
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+  }
+  .letter {
+    transition: transform 0.5s, opacity 0.5s;
+    transform: translateY(20px);
+    opacity: 0;
+  }
+  .active {
+    opacity: 1;
+    transform: translateY(0px);
+  }
+  canvas {
+    position: fixed;
+    top: 0;
+    left: 0;
+    z-index: -1;
+  }
+</style>
+</head>
+<body>
+<div class="heart" id="heart"></div>
+<div class="message" id="message"></div>
+<canvas id="canvas"></canvas>
+<audio id="background-music" loop>
+  <source src="Love_In_A_Box.ogg" type="audio/mpeg">
+  Your browser does not support the audio element.
+</audio>
+<script>
+  const canvas = document.getElementById('canvas');
+  const ctx = canvas.getContext('2d');
+  const heart = document.getElementById('heart');
+  const message = document.getElementById('message');
+  const backgroundMusic = document.getElementById('background-music');
+  const text = "蔡美轩天天开心哦";
+  canvas.width = window.innerWidth;
+  canvas.height = window.innerHeight;
+  let particles = [];
+  let particleTimer;
+
+  function Particle(x, y, radius, color, velocity) {
+    this.x = x;
+    this.y = y;
+    this.radius = radius;
+    this.color = color;
+    this.velocity = velocity;
+
+    this.draw = function() {
+      ctx.beginPath();
+      ctx.arc(this.x, this.y, this.radius, 0, Math.PI * 2, false);
+      ctx.fillStyle = this.color;
+      ctx.fill();
+      ctx.closePath();
+    };
+
+    this.update = function() {
+      this.x += this.velocity.x;
+      this.y += this.velocity.y;
+      this.draw();
+    };
+  }
+
+  function addParticle() {
+    const x = canvas.width / 2;
+    const y = canvas.height / 2;
+    const radius = Math.random() * 2 + 1;
+    const color = `hsl(${Math.random() * 360}, 100%, 50%)`;
+    const angle = Math.random() * Math.PI * 2;
+    const speed = Math.random() * 6 + 2;
+    const velocity = {
+      x: Math.cos(angle) * speed,
+      y: Math.sin(angle) * speed
+    };
+    particles.push(new Particle(x, y, radius, color, velocity));
+  }
+
+  function explode() {
+    heart.classList.add('exploding'); // Ensure this class is added for animation
+    for (let i = 0; i < 1000; i++) {
+      addParticle();
+    }
+    if (!particleTimer) {
+      particleTimer = setInterval(addParticle, 1);
+    }
+  }
+
+  function animate() {
+    requestAnimationFrame(animate);
+    ctx.fillStyle = 'rgba(0, 0, 0, 0.1)';
+    ctx.fillRect(0, 0, canvas.width, canvas.height);
+    particles.forEach((particle, index) => {
+      particle.update();
+      if (particle.x < 0 || particle.x > canvas.width || particle.y < 0 || particle.y > canvas.height) {
+        particles.splice(index, 1);
+      }
+    });
+  }
+
+  function showMessage() {
+    message.innerHTML = '';
+    Array.from(text).forEach((char, index) => {
+      let span = document.createElement('span');
+      span.textContent = char;
+      span.classList.add('letter');
+      message.appendChild(span);
+      setTimeout(() => {
+        span.classList.add('active');
+      }, index * 100);
+    });
+    message.style.opacity = 1; // Ensure message visibility
+  }
+
+  animate();
+
+  heart.addEventListener('click', function() {
+    explode();
+    showMessage();
+    backgroundMusic.play();
+  });
+</script>
+</body>
+</html>
